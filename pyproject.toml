@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cartographer-interp"
+version = "0.1.0"
+description = "A library for inspecting transformer internals via logit-lens projection and rank-displacement analysis."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "James J. Davison" },
+]
+keywords = [
+    "interpretability",
+    "transformers",
+    "logit-lens",
+    "mechanistic-interpretability",
+    "attention",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# Core runtime dependencies — only what is genuinely imported by the
+# always-on code paths (model loading, hooking, projection, scanning, stats).
+dependencies = [
+    "numpy>=1.23",
+    "torch>=2.0",
+    "transformers>=4.40",
+]
+
+[project.optional-dependencies]
+# Plotting backends used by cartographer.viz. matplotlib for the 2D heatmaps
+# (heatmap, entropy, river); plotly for the 3D terrain views (terrain, multiverse).
+viz = [
+    "matplotlib>=3.6",
+    "plotly>=5.0",
+]
+# scipy.stats.spearmanr is used by cartographer.decompose.circuits.
+decompose = [
+    "scipy>=1.10",
+]
+# lancedb backs the optional token-vocabulary index helper in cartographer.io.lance.
+lance = [
+    "lancedb>=0.4",
+]
+all = [
+    "matplotlib>=3.6",
+    "plotly>=5.0",
+    "scipy>=1.10",
+    "lancedb>=0.4",
+]
+
+[project.urls]
+Homepage = "https://github.com/ineedasername/cartographer"
+Repository = "https://github.com/ineedasername/cartographer"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["cartographer*"]
+
+[tool.setuptools.package-data]
+"cartographer.data" = ["constrained_vocabs/*.npy"]

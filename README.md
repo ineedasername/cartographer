@@ -1,8 +1,15 @@
 # Cartographer
 
-A library for inspecting transformer internals via logit-lens projection and rank-displacement analysis — architecture-agnostic, so model structure is discovered at load time rather than hardcoded.
+A library for inspecting transformer internals via analystical methods and token-space projections like logit-lens style representations. Architecture-agnostic, so model structure is discovered at load time rather than hardcoded, but some modifications will be required for model families outside of gemma and qwen.
 
-Cartographer projects hidden states and per-head attention outputs through a model's final norm and unembedding (logit-lens style), then measures how the resulting token rankings shift across layers and heads. The core measurement is plain: it tracks how the rank ordering of the vocabulary changes from one layer/head to the next when projected to token space.
+*Functionality includes:*
+
+ -hidden states and per-head attention outputs (final norm and unembedding)
+ -measures token rankings shift across layers and heads
+ -head pairwise correlations as well as output token
+ -visualizations 
+ -lancedb for data capture and post-inference analysis
+ -multiple language support for constrained vocabulary projections, i.e., the question "If the model had to project a token in the target language, where in the vocabulary does the latent space surface it as token representation?"
 
 ## Install
 

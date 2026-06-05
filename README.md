@@ -5,10 +5,15 @@ A library for inspecting transformer internals via analystical methods and token
 *Functionality includes:*
 
    -hidden states and per-head attention outputs (final norm and unembedding)
+
    -measures token rankings shift across layers and heads
+   
    -head pairwise correlations as well as output token
+   
    -visualizations 
+   
    -lancedb for data capture and post-inference analysis
+   
   -multiple language support for constrained vocabulary projections, i.e., the question "If the model had to project a token in the target language, where in the vocabulary does the latent space surface it as token representation?"
 
 ## Install

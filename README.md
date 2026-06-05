@@ -92,3 +92,5 @@ A hosted demo is planned: [link: HF Space].
 ## License
 
 MIT. See [LICENSE](LICENSE). Copyright (c) 2026 James J. Davison.
+
+Built with Claude (Anthropic) as coding collaborator. **Responsibility for the code and its design choices rests with the human author, James J. Davison.**

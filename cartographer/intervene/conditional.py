@@ -84,22 +84,22 @@ class ConditionalGate(InterventionHook):
             monitor_target.register_forward_hook(monitor_hook)
         )
 
-        # Wrap the intervention's install — we monkey-patch the hook_fn
-        # to check our gate. The simplest approach: install normally,
+        # Wrap the intervention's install — I monkey-patch the hook_fn
+        # to check the gate. The simplest approach: install normally,
         # then wrap each handle's hook.
         #
-        # Actually, we use a simpler pattern: store gate ref on intervention
+        # Actually, I use a simpler pattern: store gate ref on intervention
         # and install it. The intervention checks gate['fired'] if present.
         self.intervention._gate_signal = gate
         self.intervention.install(model, profile)
         self._handles.extend(self.intervention._handles)
-        self.intervention._handles = []  # we own them now
+        self.intervention._handles = []  # I own them now
 
         return self
 
     def remove(self):
         super().remove()
-        # Don't double-remove; we already took ownership
+        # Don't double-remove; I already took ownership
         self.intervention._handles.clear()
 
 

@@ -1003,7 +1003,7 @@ def compute_all_coordinates_motion(scan, position):
     (layer, head) coordinate using the softmax at that single cell.
 
     But wait — motion requires comparing two states. At a single cell there's
-    no "motion." What we compute here is each token's RANK at each of the 104
+    no "motion." What I compute here is each token's RANK at each of the 104
     coordinates, then derive cross-coordinate metrics:
 
     For each token:

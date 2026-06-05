@@ -204,7 +204,7 @@ def categorize_token(token_str, token_id):
     function_words = {'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been',
                        'to', 'of', 'in', 'on', 'at', 'by', 'for', 'with', 'from',
                        'and', 'or', 'but', 'not', 'it', 'its', 'that', 'this',
-                       'I', 'you', 'he', 'she', 'we', 'they', 'my', 'your', 'his',
+                       'I', 'you', 'he', 'she', 'I', 'they', 'my', 'your', 'his',
                        'her', 'our', 'their', 'me', 'him', 'us', 'them',
                        's', 't', 're', 've', 'll', 'd', 'm'}
     if t.lower() in function_words:

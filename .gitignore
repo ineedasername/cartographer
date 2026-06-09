@@ -41,7 +41,7 @@ htmlcov/
 *.lance/
 *.html
 
-# NOTE: cartographer/data/constrained_vocabs/*.npy is intentionally tracked
+# NOTE: tokographer/data/constrained_vocabs/*.npy is intentionally tracked
 # (small token-ID vocabularies needed at runtime). Ignore other stray .npy.
 *.npy
-!cartographer/data/constrained_vocabs/*.npy
+!tokographer/data/constrained_vocabs/*.npy

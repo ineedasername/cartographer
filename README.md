@@ -1,108 +1,87 @@
-# Cartographer
+# tokographer
 
-A library for inspecting transformer internals via analystical methods and token-space projections like logit-lens style representations. Architecture-agnostic, so model structure is discovered at load time rather than hardcoded, but some modifications will be required for model families outside of gemma and qwen.
+**A dependency-light toolkit for reading a transformer's internals with the logit lens** — project any layer or attention head to vocabulary space, on a stock Hugging Face causal LM, with the architecture discovered at load time so there's no per-model wiring.
+
+tokographer gathers the standard moves — logit-lens projection, per-head decomposition, activation interventions, rank-displacement analysis — behind one small, architecture-agnostic API. It runs directly on stock `transformers` models (including multimodal wrappers), so nothing has to be converted into a special format first. The architecture probe is validated on the Gemma, Qwen, and Llama families; other families may need a pattern added to the probe — a few lines, not a rewrite.
 
 *Functionality includes:*
 
-   -hidden states and per-head attention outputs (final norm and unembedding)
-
-   -measures token rankings shift across layers and heads
-   
-   -head pairwise correlations as well as output token
-   
-   -visualizations 
-   
-   -lancedb for data capture and post-inference analysis
-   
-  -multiple language support for constrained vocabulary projections, i.e., the question "If the model had to project a token in the target language, where in the vocabulary does the latent space surface it as token representation?"
+- **logit-lens projection** of hidden states and isolated per-head attention outputs (through the model's own final norm + unembedding)
+- **rank-displacement** — how the vocabulary's full rank ordering shifts from layer to layer and head to head, against a null-prompt baseline
+- a trainable **tuned lens** with a *swappable training objective* — KL (the canonical tuned lens) vs. rank/geometry objectives that target the long tail KL ignores
+- **head-to-head pairwise correlations** and per-token output movement
+- **activation interventions** — scale, zero, subtract, or nudge heads / MLPs / logits, with a sweep harness
+- **visualizations** — rank heatmaps, entropy landscapes, token-identity "river" plots, 3-D proximity terrains
+- an optional **LanceDB** token index for capture and post-inference analysis
+- **multilingual constrained-vocabulary projection** — *"if the model had to surface this token in a target language, where in that language's vocabulary does the latent space place it?"*
 
 ## Install
 
-```bash
-pip install cartographer-interp
-```
-
-Core dependencies are `numpy`, `torch`, and `transformers`. Optional extras pull in the plotting and storage backends only if you need them:
+From source:
 
 ```bash
-pip install "cartographer-interp[viz]"        # matplotlib + plotly for cartographer.viz
-pip install "cartographer-interp[decompose]"  # scipy for cartographer.decompose.circuits
-pip install "cartographer-interp[lance]"      # lancedb for the token-index helper
-pip install "cartographer-interp[all]"        # everything
-```
-
-To install from source:
-
-```bash
-git clone https://github.com/ineedasername/cartographer
-cd cartographer
+git clone https://github.com/ineedasername/tokographer
+cd tokographer
 pip install -e .
 ```
 
+Core dependencies: `numpy`, `torch`, `transformers`. Optional extras: `pip install -e ".[viz]"` (matplotlib + plotly), `".[decompose]"` (scipy), `".[lance]"` (lancedb), or `".[all]"`.
+
+*(A PyPI release — `pip install tokographer` — is on the way.)*
+
 ## Quick start
 
-Load any supported causal LM, run a forward pass, and read out what each layer's residual stream "wants to say" by projecting it through the model's final norm and unembedding (a logit lens):
+Read what each layer's residual stream "wants to say" by projecting it through the model's final norm and unembedding — a **logit lens**. The architecture is probed at load time, so the same code runs on any supported causal LM:
 
 ```python
 import torch
-from cartographer.inspect import ModelEngine
-from cartographer.hook import project_to_token
+from tokographer.inspect import ModelEngine
+from tokographer.hook import project_to_token
 
-# Architecture is probed at load time — no per-model wiring needed.
 engine = ModelEngine()
-profile = engine.load_model("HuggingFaceTB/SmolLM2-135M")
+profile = engine.load_model("HuggingFaceTB/SmolLM2-135M-Instruct")
 model, tokenizer = engine.model, engine.tokenizer
-print(profile.architecture, profile.num_layers, "layers")
 
 ids = tokenizer("The capital of France is", return_tensors="pt").input_ids.to(engine.device)
 with torch.no_grad():
     out = model(ids, output_hidden_states=True)
-
 norm, lm_head = profile.get_norm(), profile.get_lm_head()
 
-# Project the residual stream at the last position, layer by layer.
-for layer in range(0, profile.num_layers + 1, 5):
-    h = out.hidden_states[layer][:, -1, :]
-    token, prob = project_to_token(h, norm, lm_head, tokenizer)
-    print(f"layer {layer:2d}: {token!r} (p={prob:.3f})")
+for layer in range(0, profile.num_layers + 1, profile.num_layers // 6):
+    tok, p = project_to_token(out.hidden_states[layer][:, -1, :], norm, lm_head, tokenizer)
+    print(f"layer {layer:2d}: {tok!r:10} (p={p:.3f})")
 ```
 
-For a per-head, per-position rank-displacement scan across all layers (writes to a SQLite DB and prints a summary dashboard):
-
-```python
-from cartographer.rankd import capture_baseline, run_scan, print_dashboard
-from cartographer.inspect import load_model_simple
-
-model, tok, device, n_layers, n_heads = load_model_simple("google/gemma-3-1b-it")
-db = "rank_scan.db"
-
-capture_baseline(model, tok, device, n_layers, n_heads, db)
-run_scan(model, tok, device, n_layers, n_heads, "The capital of France is", db)
-print_dashboard(db)
 ```
+layer  0: ' is'    (p=1.000)
+layer 15: ' '      (p=0.882)
+layer 25: ' the'   (p=0.462)
+```
+
+Each line is the top token the logit lens reads from that layer's residual. (Raw logit-lens readouts are noisy on a small 135M model and sharpen with scale — the very noise the *tuned lens* was built to reduce; pass a larger model for crisper trajectories.)
+
+Runnable scripts are in [`examples/`](examples/): the logit lens above, a per-layer / per-head rank-displacement scan, a head-muting intervention (zero one head's contribution and watch the prediction move), and a **tuned lens** trained with a swappable objective.
 
 ## What's in it
 
-- **`cartographer.common`** — shared utilities: Spearman rank comparison, Cohen's d, Jaccard, token categorization, Unicode-script detection, terminal formatting.
-- **`cartographer.inspect`** — model loading and architecture probing; discovers layers, norm, and unembedding for a model family without hardcoding paths.
-- **`cartographer.hook`** — hook lifecycle management and projection functions that map hidden states and per-head outputs to token space.
-- **`cartographer.io`** — file and database helpers for scan files (`.npz`), SQLite scan/benchmark DBs, and an optional LanceDB token index.
-- **`cartographer.evaluate`** — a lightweight benchmark database plus sweep-curve transition detection and Pareto-frontier utilities.
-- **`cartographer.viz`** — rank heatmaps, entropy landscapes, token-identity "river" plots, and 3D proximity terrains (matplotlib / plotly).
-- **`cartographer.intervene`** — reusable hooks for scaling, zeroing, subtracting, or nudging attention heads / MLPs / logits, with a sweep harness.
-- **`cartographer.rankd`** — the rank-displacement scan: per-head, per-position Spearman capture across all layers, with cross-model comparison and summary reporting.
-- **`cartographer.decompose`** — analysis on captured traces: pairwise register correlation (`circuits`), correlation power analysis (`cpa`), group differential analysis (`differential`), metadata cross-reference (`crossref`), and per-token rank-displacement traffic analysis (`traffic`).
+- **`tokographer.inspect`** — model loading and architecture probing: locates the layer stack, final norm, and unembedding for a model family without hardcoded paths (works on stock Hugging Face models, including multimodal wrappers).
+- **`tokographer.hook`** — forward-hook lifecycle and **logit-lens** projection: map a hidden state, or a single attention head's isolated output, to a vocabulary distribution.
+- **`tokographer.intervene`** — reusable hooks to scale, zero, subtract, or nudge attention heads / MLPs / logits, plus a sweep harness; architecture-agnostic via a layer accessor.
+- **`tokographer.rankd`** — a per-(layer, head, position) scan over a forward pass. For each layer and head it reads the **vocabulary ranking** the logit lens implies and computes the **Spearman rank-correlation** — the strength and direction of the monotonic relationship between two orderings — against a null-prompt baseline. Also includes a trainable **tuned lens** (`tokographer.rankd.tuned_lens`, after Belrose et al. 2023) whose *training objective* is swappable: KL (the canonical tuned lens, head-dominated) versus rank/geometry objectives (pairwise-rank, Pearson, soft-Spearman) that target the long tail KL ignores — a small instrument for asking which layer preserves which structure of the distribution.
+- **`tokographer.decompose`** — analysis over captured traces: pairwise head-to-head correlation (`circuits`), correlation power analysis (`cpa`), group differential analysis (`differential`), metadata cross-reference (`crossref`), and per-token movement (`traffic`).
+- **`tokographer.viz`** — heatmaps, entropy landscapes, token-identity "river" plots, and 3-D proximity terrains (matplotlib / plotly).
+- **`tokographer.io`** — `.npz` scan files, SQLite stores, and an optional LanceDB token index.
+- **`tokographer.evaluate`** — a lightweight benchmark database plus sweep-curve transition detection and Pareto-frontier utilities.
+- **`tokographer.common`** — shared statistics (Spearman, Cohen's d, Jaccard), token categorization, Unicode-script detection, terminal formatting.
 
-A small set of per-script token-ID vocabularies ships in `cartographer/data/constrained_vocabs/` for constrained-vocabulary projection.
+A small set of token-ID vocabularies ships in `tokographer/data/constrained_vocabs/` (English, Chinese, Arabic, Cyrillic, Devanagari) for constrained-vocabulary projection — restrict the unembedding to one language and ask where a layer's representation would surface as a token in that script.
 
 ## Status
 
-v0.1 — extracted and consolidated from research tooling. The APIs work and the core paths are exercised, but they may shift between minor versions as the surface is cleaned up. Treat function signatures as provisional.
-
-A hosted demo is planned: [link: HF Space].
+v0 — extracted and consolidated from research tooling. It is research code: the core paths run and are exercised by the examples, but the API surface is provisional and may shift between versions. The architecture probe is exercised on the Gemma, Qwen, and Llama families; other families may need a pattern added. Built and used in the open as a working instrument, not a polished framework.
 
 ## License
 
-MIT. See [LICENSE](LICENSE). Copyright (c) 2026 James J. Davison.
+MIT — see [LICENSE](LICENSE). © 2026 James J. Davison.
 
 Built with Claude (Anthropic) as coding collaborator. **Responsibility for the code and its design choices rests with the human author, James J. Davison.**

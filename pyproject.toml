@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "cartographer-interp"
+name = "tokographer"
 version = "0.1.0"
 description = "A library for inspecting transformer internals via logit-lens projection and rank-displacement analysis."
 readme = "README.md"
@@ -39,17 +39,17 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Plotting backends used by cartographer.viz. matplotlib for the 2D heatmaps
+# Plotting backends used by tokographer.viz. matplotlib for the 2D heatmaps
 # (heatmap, entropy, river); plotly for the 3D terrain views (terrain, multiverse).
 viz = [
     "matplotlib>=3.6",
     "plotly>=5.0",
 ]
-# scipy.stats.spearmanr is used by cartographer.decompose.circuits.
+# scipy.stats.spearmanr is used by tokographer.decompose.circuits.
 decompose = [
     "scipy>=1.10",
 ]
-# lancedb backs the optional token-vocabulary index helper in cartographer.io.lance.
+# lancedb backs the optional token-vocabulary index helper in tokographer.io.lance.
 lance = [
     "lancedb>=0.4",
 ]
@@ -61,12 +61,12 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ineedasername/cartographer"
-Repository = "https://github.com/ineedasername/cartographer"
+Homepage = "https://github.com/ineedasername/tokographer"
+Repository = "https://github.com/ineedasername/tokographer"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["cartographer*"]
+include = ["tokographer*"]
 
 [tool.setuptools.package-data]
-"cartographer.data" = ["constrained_vocabs/*.npy"]
+"tokographer.data" = ["constrained_vocabs/*.npy"]

@@ -1,5 +1,7 @@
 # tokographer
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+
 **A dependency-light toolkit for reading a transformer's internals with the logit lens** — project any layer or attention head to vocabulary space, on a stock Hugging Face causal LM, with the architecture discovered at load time so there's no per-model wiring.
 
 tokographer gathers the standard moves — logit-lens projection, per-head decomposition, activation interventions, rank-displacement analysis — behind one small, architecture-agnostic API. It runs directly on stock `transformers` models (including multimodal wrappers), so nothing has to be converted into a special format first. The architecture probe is validated on the Gemma, Qwen, and Llama families; other families may need a pattern added to the probe — a few lines, not a rewrite.
@@ -79,6 +81,19 @@ A small set of token-ID vocabularies ships in `tokographer/data/constrained_voca
 ## Status
 
 v0 — extracted and consolidated from research tooling. It is research code: the core paths run and are exercised by the examples, but the API surface is provisional and may shift between versions. The architecture probe is exercised on the Gemma, Qwen, and Llama families; other families may need a pattern added. Built and used in the open as a working instrument, not a polished framework.
+
+## Citation
+
+If you use tokographer in your work, you can cite it as:
+
+```bibtex
+@software{davison2026tokographer,
+  author = {Davison, James J.},
+  title  = {tokographer: reading transformer internals with the logit lens},
+  year   = {2026},
+  url    = {https://github.com/ineedasername/tokographer}
+}
+```
 
 ## License
 

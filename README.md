@@ -4,13 +4,13 @@
 
 **A dependency-light toolkit for reading a transformer's internals with the logit lens** — project any layer or attention head to vocabulary space, on a stock Hugging Face causal LM, with the architecture discovered at load time so there's no per-model wiring.
 
-tokographer gathers the standard moves — logit-lens projection, per-head decomposition, activation interventions, rank-displacement analysis — behind one small, architecture-agnostic API. It runs directly on stock `transformers` models (including multimodal wrappers), so nothing has to be converted into a special format first. The architecture probe is validated on the Gemma, Qwen, and Llama families; other families may need a pattern added to the probe — a few lines, not a rewrite.
+tokographer provides an accessible range of analytical interpretability tools  — logit-lens projection, per-head decomposition, activation interventions, rank-displacement analysis — behind one small, architecture-agnostic API. It runs directly on stock `transformers` models (including multimodal wrappers), so nothing has to be converted into a special format first. The architecture probe is validated on the Gemma, Qwen, and Llama families; other families may need a pattern added to the probe — a few lines, not a rewrite.
 
 *Functionality includes:*
 
 - **logit-lens projection** of hidden states and isolated per-head attention outputs (through the model's own final norm + unembedding)
-- **rank-displacement** — how the vocabulary's full rank ordering shifts from layer to layer and head to head, against a null-prompt baseline
-- a trainable **tuned lens** with a *swappable training objective* — KL (the canonical tuned lens) vs. rank/geometry objectives that target the long tail KL ignores
+- *projection rank tracking below argmax:** across token generation how the vocabulary's full rank ordering shifts from layer to layer and head to head, against a null-prompt baseline
+- a trainable **tuned lens** with a *swappable training objective* — KL (the canonical tuned lens) vs. other targets that capture alternative portions of the distribution
 - **head-to-head pairwise correlations** and per-token output movement
 - **activation interventions** — scale, zero, subtract, or nudge heads / MLPs / logits, with a sweep harness
 - **visualizations** — rank heatmaps, entropy landscapes, token-identity "river" plots, 3-D proximity terrains
